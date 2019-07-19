@@ -1,5 +1,5 @@
 from django.db import models
-
+import re
 # Create your models here.
 
 class Statuses(models.Model):
@@ -10,6 +10,7 @@ class Statuses(models.Model):
 
 class Service_Persentage(models.Model):
     persentage = models.IntegerField(default=True)
+
     def __str__(self):
         return self.persentage
 
@@ -28,8 +29,8 @@ class Users(models.Model):
     login = models.CharField(max_length=50)
     password = models.CharField(max_length=50)
     email = models.CharField(max_length=50)
-    phone = models.IntegerField()
-    dateofadd = models.IntegerField(default=True)
+    phone = models.CharField(max_length=20)
+    dateofadd = models.CharField(max_length=20)
     roleid= models.ForeignKey(Roles, on_delete=models.SET_NULL, null=True, related_name='users', default=True)
     def __str__(self):
         return self.name
@@ -58,15 +59,16 @@ class Meal_to_Order(models.Model):
 
 
 class Orders(models.Model):
-    id = models.IntegerField(primary_key=True)
+
     waiterid = models.IntegerField(default=True)
     tableid = models.IntegerField(default=True)
     tablename = models.CharField(max_length=50)
     isitopen = models.IntegerField(default=True)
     date = models.IntegerField(default=True)
-    mealsid = models.ManyToManyField(Meal_Categories, related_name="meal_categories")
+    mealsid = models.ManyToManyField(Meal_Categories, related_name="meal_categories", default=True)
+    owner = models.ForeignKey('auth.User', related_name='orders', on_delete=models.CASCADE, default=1)
     def __str__(self):
-        return self.mealsid.name
+        return str(self.date)
 
 class Meal_categories_for_Dep(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -118,7 +120,7 @@ class Active_orders(models.Model):
     waiterid = models.IntegerField(default=True)
     tablename = models.ForeignKey(Tables, on_delete=models.CASCADE, related_name='active_orders', default=True)
     isitopen = models.IntegerField(default=True)
-    date = models.IntegerField(default=True)
+    date = models.CharField(max_length=50)
     mealsid = models.IntegerField(default=True)
     def __str__(self):
         return self.name

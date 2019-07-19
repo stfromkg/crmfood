@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from crmfood.models import *
+from django.contrib.auth.models import User
 
 
 class RolesSerializer(serializers.ModelSerializer):
@@ -7,6 +8,16 @@ class RolesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Roles
         fields = ('name',)
+
+class UserSerializer(serializers.ModelSerializer):
+
+    orders = serializers.PrimaryKeyRelatedField(many=True, queryset=Orders.objects.all())
+
+
+    class Meta:
+        model = User
+        fields = ('id','username', 'orders', )
+
 
 class UsersSerializer(serializers.ModelSerializer):
 
@@ -41,31 +52,38 @@ class Meal_categories_for_DepSerializer(serializers.ModelSerializer):
         fields = ('name', 'department',)
 
 
-
+class Meal_CategoriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meal_Categories
+        fields = ('name','department',   )
 
 class OrdermiddleSerializer(serializers.PrimaryKeyRelatedField, serializers.ModelSerializer):
     class Meta:
-        model= Meals_meal_by_category
-
+        model= Meal_Categories
+        fields = ('name',)
 
 class OrdersSerializer(serializers.ModelSerializer):
-    mealsid = OrdermiddleSerializer(many=True, queryset=Meals_meal_by_category.objects.all())
+    mealsid = OrdermiddleSerializer(many=True, queryset=Meal_Categories.objects.all())
     class Meta:
         model = Orders
         fields = ('waiterid', 'tablename', 'isitopen', 'date','mealsid',   )
-    # def create(self, validated_data):
-    #     tmp = validated_data.pop('meal_categories')
-    #     ordertmp = Orders.objects.create(**validated_data)
-    #
-    #     for data in tmp:
-    #         Meals_meal_by_category.objects.create(**data)
-    #     return ordertmp
-    def get_fields(self):
-        fields= super().get_fields()
-        fields["mealsid"]= Meals_meal_by_categorySerializer(many=True)
-        return fields
 
+    def create(self, validated_data):
+        print(validated_data)
+        res=validated_data.pop('mealsid')
+        ordertmp = Orders.objects.create(**validated_data)
+        a= Orders(**validated_data)
+        a.save()
+        for i in res:
+            a.mealsid.add(i)
+            a.save()
+        return a
 
+class OrdersGetSerializer(serializers.HyperlinkedModelSerializer):
+    mealsid = Meal_CategoriesSerializer(many=True, read_only=True)
+    class Meta:
+        model = Orders
+        fields = ('waiterid', 'tablename', 'isitopen', 'date','mealsid',   )
 
 class Meal_to_OrderSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,10 +91,7 @@ class Meal_to_OrderSerializer(serializers.ModelSerializer):
         fields = ('orderid', 'meals',  )
 
 
-class Meal_CategoriesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Meal_Categories
-        fields = ('name','department',   )
+
 
 
 class DepartmentsSerializer(serializers.ModelSerializer):
